@@ -7,10 +7,16 @@ from transformers import AutoTokenizer
 
 
 class DataModule(pl.LightningDataModule):
-    def __init__(self, model_name="google/bert_uncased_L-2_H-128_A-2", batch_size=32):
+    def __init__(
+        self,
+        model_name="google/bert_uncased_L-2_H-128_A-2",
+        batch_size=64,
+        max_length=128,
+    ):
         super().__init__()
 
         self.batch_size = batch_size
+        self.max_length = max_length
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def prepare_data(self):
@@ -23,7 +29,7 @@ class DataModule(pl.LightningDataModule):
             example["sentence"],
             truncation=True,
             padding="max_length",
-            max_length=512,
+            max_length=self.max_length,
         )
 
     def setup(self, stage=None):
@@ -36,7 +42,9 @@ class DataModule(pl.LightningDataModule):
 
             self.val_data = self.val_data.map(self.tokenize_data, batched=True)
             self.val_data.set_format(
-                type="torch", columns=["input_ids", "attention_mask", "label"]
+                type="torch",
+                columns=["input_ids", "attention_mask", "label"],
+                output_all_columns=True,
             )
 
     def train_dataloader(self):
